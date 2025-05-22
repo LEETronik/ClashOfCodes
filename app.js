@@ -8,42 +8,55 @@ const firebaseConfig = {
 // Initialiser Firebase
 firebase.initializeApp(firebaseConfig);
 
-// Login funktion
-function login() {
-  const email = document.getElementById('email').value;
-  const password = document.getElementById('password').value;
-  
-  firebase.auth().signInWithEmailAndPassword(email, password)
-    .then(() => {
-      document.getElementById('login-form').style.display = 'none';
-      document.getElementById('editor-container').style.display = 'block';
-      initEditor();
-    })
-    .catch(error => {
-      console.error('Login fejl:', error);
-    });
+import { login, signup, onAuthStateChanged } from './auth.js';
+
+// DOM elementer
+const emailInput = document.getElementById('email');
+const passwordInput = document.getElementById('password');
+const loginScreen = document.getElementById('login-screen');
+const appContent = document.getElementById('app-content');
+
+// Event listeners
+document.getElementById('login-btn').addEventListener('click', handleLogin);
+document.getElementById('signup-btn').addEventListener('click', handleSignup);
+
+// Håndter login
+async function handleLogin() {
+  try {
+    await login(emailInput.value, passwordInput.value);
+  } catch (error) {
+    alert('Login fejl: ' + error.message);
+  }
 }
 
-// Opret bruger funktion
-function signup() {
-  const email = document.getElementById('email').value;
-  const password = document.getElementById('password').value;
-  
-  firebase.auth().createUserWithEmailAndPassword(email, password)
-    .then(() => {
-      alert('Bruger oprettet!');
-    })
-    .catch(error => {
-      console.error('Opret bruger fejl:', error);
-    });
+// Håndter signup
+async function handleSignup() {
+  try {
+    await signup(emailInput.value, passwordInput.value);
+    alert('Bruger oprettet!');
+  } catch (error) {
+    alert('Opret bruger fejl: ' + error.message);
+  }
 }
 
-// Initialiser kodeeditor
+// Auth state listener
+onAuthStateChanged(user => {
+  if (user) {
+    loginScreen.style.display = 'none';
+    appContent.style.display = 'block';
+    initEditor();
+  } else {
+    loginScreen.style.display = 'grid';
+    appContent.style.display = 'none';
+  }
+});
+
+// Initialiser editor
 function initEditor() {
   require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.30.1/min/vs' }});
   
   require(['vs/editor/editor.main'], function() {
-    const editor = monaco.editor.create(document.getElementById('editor'), {
+    monaco.editor.create(document.getElementById('editor'), {
       value: '// Skriv din kode her\nfunction solution() {\n  // Din løsning\n}',
       language: 'javascript',
       theme: 'vs-dark',
@@ -58,7 +71,29 @@ function submitSolution() {
   // Her vil vi senere tilføje logik til at gemme løsningen
 }
 
-// Vis login form ved load
+// Loading animation
+function simulateLoading() {
+  const steps = [
+    'Loading components...',
+    'Parsing syntax...',
+    'Initializing editor...',
+    'Ready'
+  ];
+  
+  const status = document.querySelector('.status-bar span:last-child');
+  steps.forEach((step, i) => {
+    setTimeout(() => {
+      status.innerHTML = i < steps.length - 1 
+        ? `<span class="loading">⚙️</span> ${step}`
+        : step;
+    }, i * 800);
+  });
+}
+
+// Initialiser app
 document.addEventListener('DOMContentLoaded', () => {
-  document.getElementById('login-form').style.display = 'block';
+  simulateLoading();
+  setTimeout(() => {
+    loginScreen.style.display = 'grid';
+  }, 300);
 });
